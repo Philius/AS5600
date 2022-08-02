@@ -36,7 +36,15 @@
 
 
 #include "AS5600.h"
+#include <chrono>
+#include <ctime>
 
+uint32_t micros()
+{
+  using namespace std::chrono;
+  system_clock::time_point now = system_clock::now();
+  return now.time_since_epoch().count();
+}
 
 //  CONFIGURATION REGISTERS
 const uint8_t AS5600_ZMCO = 0x00;
@@ -72,12 +80,17 @@ const uint8_t AS5600_MAGNET_HIGH   = 0x08;
 const uint8_t AS5600_MAGNET_LOW    = 0x10;
 const uint8_t AS5600_MAGNET_DETECT = 0x20;
 
-
+#ifdef unix
+AS5600::AS5600()
+{
+  _fd = wiringPiI2CSetup(0x36);
+}
+#else
 AS5600::AS5600(TwoWire *wire)
 {
   _wire = wire;
 }
-
+#endif
 
 #if defined (ESP8266) || defined(ESP32)
 bool AS5600::begin(int dataPin, int clockPin, uint8_t directionPin)
@@ -101,9 +114,9 @@ bool AS5600::begin(int dataPin, int clockPin, uint8_t directionPin)
 }
 #endif
 
-
 bool AS5600::begin(uint8_t directionPin)
 {
+#ifndef unix
   _directionPin = directionPin;
   if (_directionPin != 255)
   {
@@ -113,14 +126,19 @@ bool AS5600::begin(uint8_t directionPin)
 
   _wire->begin();
   if (! isConnected()) return false;
+#endif
   return true;
 }
 
 
 bool AS5600::isConnected()
 {
+#ifndef unix
   _wire->beginTransmission(_address);
   return ( _wire->endTransmission() == 0);
+#else
+  return true;
+#endif
 }
 
 
@@ -131,19 +149,23 @@ bool AS5600::isConnected()
 void AS5600::setDirection(uint8_t direction)
 {
   _direction = direction;
+#ifndef unix
   if (_directionPin != 255)
   {
     digitalWrite(_directionPin, _direction);
   }
+#endif
 }
 
 
 uint8_t AS5600::getDirection()
 {
+#ifndef unix
   if (_directionPin != 255)
   {
     _direction = digitalRead(_directionPin);
   }
+#endif
   return _direction;
 }
 
@@ -455,6 +477,9 @@ float AS5600::getAngularSpeed(uint8_t mode)
 //
 uint8_t AS5600::readReg(uint8_t reg)
 {
+#ifdef unix
+  return wiringPiI2CReadReg8(_fd, reg);
+#else
   _wire->beginTransmission(_address);
   _wire->write(reg);
   _error = _wire->endTransmission();
@@ -462,11 +487,16 @@ uint8_t AS5600::readReg(uint8_t reg)
   _wire->requestFrom(_address, (uint8_t)1);
   uint8_t _data = _wire->read();
   return _data;
+#endif
 }
 
 
 uint16_t AS5600::readReg2(uint8_t reg)
 {
+#ifdef unix
+  uint16_t res = wiringPiI2CReadReg16(_fd, reg);
+  return (res >> 8) | (res << 8);
+#else
   _wire->beginTransmission(_address);
   _wire->write(reg);
   _error = _wire->endTransmission();
@@ -476,30 +506,37 @@ uint16_t AS5600::readReg2(uint8_t reg)
   _data <<= 8;
   _data += _wire->read();
   return _data;
+#endif
 }
 
 
 uint8_t AS5600::writeReg(uint8_t reg, uint8_t value)
 {
+#ifdef unix
+  return wiringPiI2CWriteReg8(_fd, reg, value);
+#else
   _wire->beginTransmission(_address);
   _wire->write(reg);
   _wire->write(value);
   _error = _wire->endTransmission();
   return _error;
+#endif
 }
 
 
 uint8_t AS5600::writeReg2(uint8_t reg, uint16_t value)
 {
+#ifdef unix
+  return wiringPiI2CWriteReg16(_fd, reg, value);
+#else
   _wire->beginTransmission(_address);
   _wire->write(reg);
   _wire->write(value >> 8);
   _wire->write(value & 0xFF);
   _error = _wire->endTransmission();
   return _error;
+#endif
 }
 
 
 //  -- END OF FILE --
-
-

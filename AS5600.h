@@ -8,9 +8,11 @@
 //     URL: https://github.com/RobTillaart/AS5600
 
 
-#include "Arduino.h"
-#include "Wire.h"
+#include <cstdint>
+#include <cmath>
+#include <wiringPiI2C.h>
 
+#define PI M_PI
 
 #define AS5600_LIB_VERSION              (F("0.3.0"))
 
@@ -78,7 +80,11 @@ const uint8_t AS5600_WATCHDOG_ON        = 1;
 class AS5600
 {
 public:
+#ifdef unix
+  AS5600();
+#else
   AS5600(TwoWire *wire = &Wire);
+#endif
 
 #if defined (ESP8266) || defined(ESP32)
            //  255 is software controlled direction pin
@@ -211,8 +217,11 @@ private:
   uint8_t  _direction    = AS5600_CLOCK_WISE;
   uint8_t  _error        = 0;
 
+#ifdef unix
+  int _fd;
+#else
   TwoWire*  _wire;
-
+#endif
   //  for getAngularSpeed()
   uint32_t _lastMeasurement = 0;
   int16_t  _lastAngle       = 0;
@@ -223,5 +232,3 @@ private:
 
 
 //  -- END OF FILE --
-
-

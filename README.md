@@ -8,7 +8,7 @@
 
 # AS5600
 
-Arduino library for AS5600 magnetic rotation meter.
+Arduino + RaspberryPi library for AS5600 magnetic rotation meter.
 
 
 ## Description
@@ -84,6 +84,9 @@ parameter set to **255**, software direction control is enabled.
 
 See Software Direction Control below for more information.
 
+Note that in the Raspberry Pi implementation I (Philip Ashmore) haven't tested
+or implemented direction control, I just grounded the input so it's always
+clockwise.
 
 ## Interface
 
